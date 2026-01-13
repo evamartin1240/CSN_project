@@ -1,0 +1,9 @@
+networkx
+tqdm
+conllu
+pandas
+numpy
+pandas
+matplotlib
+seaborn
+scipy
