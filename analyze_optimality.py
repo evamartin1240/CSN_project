@@ -82,7 +82,7 @@ def plot_omega_vs_length(df, output_dir):
     plt.hexbin(df['N'], df['omega'], gridsize=25, cmap='Blues', mincnt=1)
     cb = plt.colorbar(label='Count of Sentences')
     
-    # Add a trend line (Lowess smoothing)
+    # Add a trend line
     sns.regplot(x="N", y="omega", data=df, scatter=False, color="red", line_kws={"label": "Trend"})
     
     plt.axhline(0, color='gray', linestyle='--', linewidth=1)
