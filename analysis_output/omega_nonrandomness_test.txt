@@ -1,0 +1,18 @@
+Non-randomness test for Ω (language-level)
+=========================================
+
+We compute one robust summary per language: median Ω over sentences.
+We then test whether the median of these language medians is > 0.
+
+Number of languages (L): 21
+Languages with median Ω > 0: 21
+Languages with median Ω = 0: 0
+Languages with median Ω < 0: 0
+
+Median of language medians: 0.4282
+Bootstrap 95% CI (median): [0.4032, 0.4499]
+
+Exact one-sided sign test (discarding ties at 0)
+Effective sample size (non-ties): 21
+Positive non-ties: 21
+p-value (H1: median > 0): 4.768e-07
