@@ -3,6 +3,7 @@ tqdm
 conllu
 pandas
 numpy
+statsmodels
 pandas
 matplotlib
 seaborn

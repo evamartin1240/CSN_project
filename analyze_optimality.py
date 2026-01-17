@@ -387,20 +387,26 @@ def main():
     parser = argparse.ArgumentParser(description="Analyze Syntactic Optimality Results")
     parser.add_argument("-i", "--input", type=str, required=True, help="Path to the results CSV file")
     parser.add_argument("-o", "--output", type=str, default="analysis_output", help="Directory to save plots and tables")
-    
+    parser.add_argument("--seed", type=int, default=0, help="Random seed for bootstrap confidence intervals")
+
     args = parser.parse_args()
-    
-    # Create output directory
+
     os.makedirs(args.output, exist_ok=True)
-    
-    # Run Analysis
+
     df = load_and_clean_data(args.input)
-    
+
     generate_summary_stats(df, args.output)
     plot_omega_by_language(df, args.output)
     plot_omega_vs_length(df, args.output)
     plot_distance_comparison(df, args.output)
-    
+    plot_sentence_length_histogram(df, args.output)
+
+    # Diagnostic plot
+    plot_omega_length_heatmap(df, args.output)
+
+    # Hypothesis test: Ω significantly > 0?
+    run_nonrandomness_test(df, args.output, seed=args.seed)
+
     print("\n" + "="*50)
     print(f"Analysis complete. Results saved in: {args.output}/")
     print("="*50)

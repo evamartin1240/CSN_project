@@ -1,0 +1,5 @@
+Total Sentences: 20999.0000
+Global Mean Omega: 0.4059
+Global Median Omega: 0.4220
+Percent Optimized (>0): 98.2571
+Correlation (Omega vs N): 0.1023
