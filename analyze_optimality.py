@@ -5,14 +5,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
-# Set clean scientific plotting style
 sns.set_theme(style="whitegrid", context="paper", font_scale=2.2)
 
 def load_and_clean_data(csv_path):
     print(f"Loading data from {csv_path}...")
     df = pd.read_csv(csv_path)
 
-    # Drop rows where Omega could not be calculated (NaN)
     initial_count = len(df)
     df = df.dropna(subset=['omega'])
     print(f"Loaded {initial_count} rows. Dropped {initial_count - len(df)} rows with NaN values.")
@@ -132,10 +130,6 @@ def plot_distance_comparison(df, output_dir):
     plt.close()
 
 def plot_sentence_length_histogram(df, output_dir):
-    """
-    Sentence length histogram with fixed bins:
-      <=5, 6–10, 11–15, 16–20, 21–30, 31–40, 41–60, >60
-    """
     print("Plotting sentence length histogram...")
 
     if 'N' not in df.columns:
@@ -149,7 +143,6 @@ def plot_sentence_length_histogram(df, output_dir):
     d = df[['N']].copy()
     d['len_bin'] = pd.cut(d['N'], bins=bins, labels=labels, right=True, include_lowest=True, ordered=True)
 
-    # Count per bin
     counts = d['len_bin'].value_counts().reindex(labels).fillna(0)
 
     x = np.arange(len(labels))
@@ -210,13 +203,6 @@ def plot_omega_by_length_bins(df, output_dir):
     plt.close()
 
 def plot_omega_length_heatmap(df, output_dir):
-    """
-    Heatmap of Omega distribution by sentence-length bin.
-
-    X-axis: sentence length bins
-    Y-axis: Omega bins (including a special 0.99–1.0 bin)
-    Cell value: proportion of sentences in that length bin that fall into that Omega bin
-    """
     print("Plotting Omega-by-length heatmap...")
 
     required = {'N', 'omega'}
@@ -224,11 +210,9 @@ def plot_omega_length_heatmap(df, output_dir):
         print("Skipping heatmap: required columns missing.")
         return
 
-    # Sentence length bins (fixed, linguistic)
     len_bins = [-np.inf, 5, 10, 15, 20, 30, 40, 60, np.inf]
     len_labels = ["≤5", "6–10", "11–15", "16–20", "21–30", "31–40", "41–60", ">60"]
 
-    # Omega bins with special near-1 resolution
     omega_bins = [-0.4, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99, 1.000001]
     omega_labels = [
         "-0.4-0", "0–0.1", "0.1–0.2", "0.2–0.3", "0.3–0.4", "0.4–0.5",
@@ -263,15 +247,8 @@ def plot_omega_length_heatmap(df, output_dir):
     plt.savefig(os.path.join(output_dir, "plot_omega_length_heatmap.pdf"), format="pdf")
     plt.close()
 
-# --------------------------
-# Hypothesis test utilities
-# --------------------------
 
 def bootstrap_ci(x, stat_fn=np.median, n_boot=5000, alpha=0.05, seed=0):
-    """
-    Basic percentile bootstrap CI for a statistic.
-    Returns: (stat, ci_lo, ci_hi)
-    """
     rng = np.random.default_rng(seed)
     x = np.asarray(x, dtype=float)
     x = x[~np.isnan(x)]
@@ -289,15 +266,6 @@ def bootstrap_ci(x, stat_fn=np.median, n_boot=5000, alpha=0.05, seed=0):
     return (stat_fn(x), lo, hi)
 
 def sign_test_greater_than_zero(values):
-    """
-    Exact one-sided sign test for median > 0.
-    H0: P(value > 0) = 0.5 (symmetry around 0)
-    H1: median(value) > 0
-
-    We discard ties (values == 0), as is standard for the sign test.
-
-    Returns dict with n_eff, n_pos, p_value (exact binomial tail).
-    """
     v = np.asarray(values, dtype=float)
     v = v[~np.isnan(v)]
     v = v[v != 0]  # discard ties
@@ -307,8 +275,6 @@ def sign_test_greater_than_zero(values):
 
     n_pos = int(np.sum(v > 0))
 
-    # Exact binomial tail: P(X >= n_pos) with X ~ Bin(n_eff, 0.5)
-    # Compute in log-space for stability
     from math import comb
     denom = 2 ** n_eff
     num = 0
@@ -318,23 +284,13 @@ def sign_test_greater_than_zero(values):
     return {"n_eff": n_eff, "n_pos": n_pos, "p_value": p_value}
 
 def run_nonrandomness_test(df, output_dir, seed=0):
-    """
-    Tests whether Ω is significantly > 0 in a way that respects language clustering.
 
-    Approach:
-      - Compute one robust summary per language: median Ω within that language.
-      - Test whether these language medians are > 0 using an exact one-sided sign test.
-      - Report effect size: median of language medians + bootstrap CI.
-
-    Saves results to: omega_nonrandomness_test.txt
-    """
     print("Running hypothesis test: is Ω > 0 across languages?")
 
     if 'language' not in df.columns or 'omega' not in df.columns:
         print("Skipping hypothesis test: required columns missing.")
         return
 
-    # One value per language (robust to outliers and sentence-level dependence)
     lang_medians = (
         df.groupby('language')['omega']
           .median()
@@ -351,13 +307,10 @@ def run_nonrandomness_test(df, output_dir, seed=0):
         print(f"Saved hypothesis test (empty) to {out_path}")
         return
 
-    # Effect size: median across language medians + bootstrap CI
     med, lo, hi = bootstrap_ci(lang_medians, stat_fn=np.median, n_boot=5000, alpha=0.05, seed=seed)
 
-    # Exact sign test for median > 0
     st = sign_test_greater_than_zero(lang_medians)
 
-    # Useful descriptive: how many languages have median Ω > 0 (including ties)
     n_pos_including_ties = int(np.sum(lang_medians > 0))
     n_zero = int(np.sum(lang_medians == 0))
     n_neg = int(np.sum(lang_medians < 0))
@@ -400,11 +353,7 @@ def main():
     plot_omega_vs_length(df, args.output)
     plot_distance_comparison(df, args.output)
     plot_sentence_length_histogram(df, args.output)
-
-    # Diagnostic plot
     plot_omega_length_heatmap(df, args.output)
-
-    # Hypothesis test: Ω significantly > 0?
     run_nonrandomness_test(df, args.output, seed=args.seed)
 
     print("\n" + "="*50)
